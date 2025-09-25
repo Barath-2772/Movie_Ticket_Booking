@@ -1,0 +1,75 @@
+so the  admin add the image in front and the sts send to the cloudinary and cloudinary provide ne link that link is store into the db and the sts fetch the link in db to provide the react to acees the images right ?
+ChatGPT said:
+
+Exactly ✅ You understood it perfectly. Let me lay it out in a clean flow so there’s no confusion:
+
+🔹 Step-by-Step Flow
+1. Admin uploads movie + poster (Frontend → Backend)
+
+In React (frontend), Admin fills a form:
+
+Movie Name, Genre, etc.
+
+Uploads Poster (image file).
+
+React sends request → Spring Boot backend (STS).
+
+POST /api/movies/add
+Content-Type: multipart/form-data
+Body:
+  name = "Leo"
+  genre = "Action"
+  file = <poster.jpg>
+
+2. Backend (Spring Boot) handles it
+
+Takes the uploaded file (MultipartFile).
+
+Uploads it to Cloudinary.
+
+Cloudinary returns a public image URL like:
+
+https://res.cloudinary.com/delbuv9wd/image/upload/v1694012345/movie_posters/leo.jpg
+
+
+Backend saves movie record in DB with:
+
+name = "Leo"
+
+genre = "Action"
+
+poster_url = "https://res.cloudinary.com/..."
+
+3. React fetches movies
+
+React calls:
+
+GET /api/movies
+
+
+Backend queries DB, gets movie records with poster_url.
+
+Sends response:
+
+[
+  {
+    "id": 1,
+    "name": "Leo",
+    "genre": "Action",
+    "poster_url": "https://res.cloudinary.com/delbuv9wd/image/upload/v1694012345/movie_posters/leo.jpg"
+  }
+]
+
+4. React displays the movie
+
+React renders:
+
+<img src={movie.poster_url} alt={movie.name} />
+
+
+➡️ Browser loads the image directly from Cloudinary’s CDN, not from your server.
+(This is why Cloudinary is powerful → fast delivery + optimized image hosting.)
+
+✅ Summary in one line
+
+Admin uploads → Backend sends to Cloudinary → Cloudinary gives link → Backend stores link in DB → Frontend fetches link from DB → React <img> shows it.

@@ -1,0 +1,117 @@
+DTO :
+
+
+
+
+
+so youre saying in sts no need of modal right only need of dto to store and send to front end ?
+ChatGPT said:
+
+Good question 👍 Let me break this down clearly:
+
+🔹 In Spring Boot (STS Project)
+
+You actually need both:
+
+Entity / Model (JPA @Entity)
+
+Example: Booking, Show, Movie, Theater, Seat
+
+These map directly to your database tables.
+
+They are used for saving, updating, and fetching data from DB.
+
+DTO (Data Transfer Object)
+
+Example: BookingDTO
+
+This is not stored in DB, but is only used to shape the data you send to frontend.
+
+You pick only the useful fields (movieTitle, theaterName, showTime, seats) and avoid sending entire nested objects.
+
+🔹 Why You Need DTO
+
+If you send Entity objects directly:
+
+You risk infinite JSON recursion (Booking → Show → Booking loops).
+
+You might send too much unnecessary data (passwords, internal IDs, lazy proxies).
+
+Lazy loading might break (Unknown Movie issue you saw).
+
+DTO solves this by flattening and cleaning data for the frontend.
+
+🔹 Example Flow
+Entities (Models in DB)
+@Entity
+public class Booking {
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @ManyToOne
+    private Show show;
+
+    @OneToMany(mappedBy = "booking")
+    private List<Seat> bookedSeats;
+
+    // getters, setters
+}
+
+DTO (for frontend)
+public class BookingDTO {
+    private Long id;
+    private String movieTitle;
+    private String theaterName;
+    private LocalDateTime showTime;
+    private List<String> seats;
+
+    public BookingDTO(Booking booking) {
+        this.id = booking.getId();
+        this.movieTitle = booking.getShow().getMovie().getTitle();
+        this.theaterName = booking.getShow().getTheater().getName();
+        this.showTime = booking.getShow().getShowTime();
+        this.seats = booking.getBookedSeats()
+                            .stream()
+                            .map(Seat::getSeatNumber)
+                            .toList();
+    }
+}
+
+Controller
+@GetMapping("/by-user/{userId}")
+public List<BookingDTO> getBookingsByUser(@PathVariable Long userId) {
+    return bookingRepository.findByUserId(userId)
+                            .stream()
+                            .map(BookingDTO::new)
+                            .toList();
+}
+
+🔹 Frontend (React)
+
+Now your React gets clean JSON:
+
+[
+  {
+    "id": 1,
+    "movieTitle": "Leo",
+    "theaterName": "PVR Chennai",
+    "showTime": "2025-09-07T18:00:00",
+    "seats": ["A1", "A2"]
+  }
+]
+
+
+And you display:
+
+<h4>{booking.movieTitle}</h4>
+<p>Theater: {booking.theaterName}</p>
+<p>Time: {new Date(booking.showTime).toLocaleString()}</p>
+<p>Seats: {booking.seats.join(", ")}</p>
+
+
+✅ So, in STS:
+
+Keep your models (for DB).
+
+Add DTOs (for frontend).
